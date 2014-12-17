@@ -1,0 +1,10 @@
+AT+CREG?                                           //registration status
+AT+CGATT?                 //attach or detach the device to packet domain service
+AT+CIPSHUT                                         //bring up wireless connection
+AT+CSTT=\"airtelgprs.com"                       //start task and setting the APN
+AT+CIICR                                          //bring up wireless connection
+AT+CIFSR                                           //get local IP address
+AT+CIPSPRT=0
+AT+CIPSTART=\"tcp\",\"api.xively.com\",\"8081\"    //start up the connection
+AT+CIPSEND                                    //begin send data to remote server
+AT+CIPCLOSE                                        //close the connection
