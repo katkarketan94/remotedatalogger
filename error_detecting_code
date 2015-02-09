@@ -1,0 +1,135 @@
+#include <SoftwareSerial.h>
+#include <String.h>
+#include <Wire.h>
+#include <LiquidCrystal.h>
+
+LiquidCrystal lcd(26,27,28,29,30,31);
+
+SoftwareSerial mySerial(10, 11); //pin24,pin25  on 2560
+int sensorPin = 53; 
+int onoffPin = 22;
+
+void setup()
+  {
+  mySerial.begin(9600);  // the GPRS baud rate   
+  Serial.begin(9600);    // the Serial Monitor baud rate 
+  delay(500);
+  pinMode(onoffPin, OUTPUT);
+   digitalWrite(onoffPin, LOW);
+  delay(1000);
+  digitalWrite(onoffPin, HIGH);
+  delay(1000);
+  //pin 22 is connected to pin 10 of sim900 module, so make Pin 22 High for 1 sec 
+  
+  }
+ 
+void loop()
+{
+ 
+  mySerial.println("AT+CREG?");
+  Serial.println("AT+CREG?");
+  delay(1000); 
+  ShowSerialData();
+    
+  mySerial.println("AT+CGATT?");
+  Serial.println("AT+CGATT?");
+  delay(500);
+  ShowSerialData();
+  
+  mySerial.println("AT+CIPSHUT");//bring up wireless connection
+  Serial.println("AT+CIPSHUT");
+  delay(3000);
+  ShowSerialData();
+ 
+  mySerial.println("AT+CSTT=\"bsnlnet\"");//start task and setting the APN,
+  Serial.println("AT+CSTT=\"bsnlnet\"");
+  delay(1000);
+  ShowSerialData();
+   
+  mySerial.println("AT+CIICR");//bring up wireless connection
+  Serial.println("AT+CIICR");
+  delay(3000);
+  ShowSerialData();
+ 
+  mySerial.println("AT+CIFSR");//get local IP adress
+  Serial.println("AT+CIFSR");
+  delay(2000);
+  ShowSerialData();
+
+  
+  mySerial.println("AT+CIPSPRT=0");
+  Serial.println("AT+CIPSPRT=0");
+  delay(3000);
+  ShowSerialData();
+
+  mySerial.println("AT+CIPSTART=\"tcp\",\"api.xively.com\",\"8081\"");//start up the connection
+  Serial.println("AT+CIPSTART=\"tcp\",\"api.xively.com\",\"8081\"");
+  delay(2000);
+ 
+  ShowSerialData();
+   
+ 
+  while(1){ 
+  
+  int sensorValue = analogRead(sensorPin);
+    
+  mySerial.println("AT+CIPSEND");//begin send data to remote server
+  Serial.println("AT+CIPSEND");
+  delay(1000);
+  
+  String content = "";
+  
+  while(mySerial.available()){
+  char character;
+  for(int i=0; i<40; i++){
+    character = mySerial.read();
+    content.concat(character);
+    delay(50); }
+  }
+  
+  if( content.indexOf("ERROR") >= 0 ){
+  Serial.println("ERROR found");
+  break;
+   }
+    
+  mySerial.print("{\"method\": \"put\",\"resource\": \"/feeds/1198901478.json/\",\"params\"");//here is the feed you apply from pachube
+  delay(500);
+  ShowSerialData();
+  mySerial.print(": {},\"headers\": {\"X-ApiKey\":");//in here, you should replace your pachubeapikey
+  delay(500);
+  ShowSerialData();
+  mySerial.print("\"RxDtavgd84MKtJIMK1R4xZ4jwANT6z25XA0DYV3GYOeOaYsR\"");//pachubeapikey
+  delay(500);
+  ShowSerialData();
+ 
+  mySerial.print("},\"body\":");
+  delay(500);
+  ShowSerialData();
+  
+  mySerial.print(" {\"version\": \"1.0.0\",\"datastreams\":");
+  delay(500);
+  ShowSerialData();
+  
+  mySerial.print("[{\"id\": \"Pot\",\"current_value\" : \"");mySerial.print(sensorValue);mySerial.println("\"}]}}");
+  delay(500);
+  ShowSerialData();
+ 
+  mySerial.println((char)26);//sending
+  delay(6000);//waitting for reply, important! the time is base on the condition of internet 
+  if(mySerial.read()==0)
+  mySerial.println();
+  ShowSerialData();
+  }
+  
+  mySerial.println("AT+CIPCLOSE");//close the connection
+  delay(100);
+  ShowSerialData();
+   
+}
+ 
+  void ShowSerialData() {
+  //lcd.clear();
+  while(mySerial.available()!=0)
+  Serial.write(mySerial.read()); 
+  //lcd.println(mySerial.read());  
+  }
